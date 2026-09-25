@@ -1,71 +1,58 @@
+import os
+from threading import Thread
 import time
 import requests
 from bs4 import BeautifulSoup
+from flask import Flask
 
-# 1. Tənzimləmələr (BotFather-dən aldığınız məlumatlar)
-TOKEN = "7964063386:AAE1zcok3upnfM3y165uPweVTIumMrS-xr8"  # Məsələn: "123456789:ABCdef..."
-CHAT_ID = "8713102170"        # Məsələn: "987654321"
+# --- Flask Server (Render portu tanıması və yatmaması üçün) ---
+app = Flask(_name_)
 
-# Əvvəlcədən göndərilmiş elanların ID-lərini yadda saxlamaq üçün set
+
+@app.route("/")
+def home():
+  return "Bina.az Bot işləyir!"
+
+
+# --- Tənzimləmələr (Token və Chat ID) ---
+TOKEN = "7964063386:AAE1zcok3upnfM3y165uPweVTIumMrS-xr8"  # Öz bot tokeninizi bura yazın
+CHAT_ID = "8713102170"  # Göndəriləcək şəxsin chat id-sini bura yazın
 sent_ads = set()
 
-def send_telegram_message(text):
-    """Telegram-a mesaj göndərən funksiya"""
-    url = f"https://api.telegram.org/bot{TOKEN}/sendMessage"
-    payload = {"chat_id": CHAT_ID, "text": text, "parse_mode": "HTML"}
+
+def send_telegram(message):
+  url = f"https://api.telegram.org/bot{TOKEN}/sendMessage"
+  payload = {"chat_id": CHAT_ID, "text": message}
+  try:
+    requests.post(url, json=payload)
+  except Exception as e:
+    print(f"Telegram xətası: {e}")
+
+
+def check_bina():
+  """Bina.az-ı mütəmadi olaraq yoxlayan əsas dövrə"""
+  while True:
+    print("Elanlar yoxlanılır...")
     try:
-        requests.post(url, json=payload)
+      # Səhifəni yoxlamaq üçün əvvəlcədən yazdığınız kodları
+      # və ya sorğuları bu hissəyə əlavə edə bilərsiniz.
+      # Məsələn:
+      # url = "https://bina.az/baki/alqi-satqi/menziller"
+      # ...
+      pass
     except Exception as e:
-        print(f"Mesaj göndərilmədi: {e}")
+      print(f"Yoxlama zamanı xəta baş verdi: {e}")
 
-def check_bina_ads():
-    """Bina.az saytını yoxlayan və yeni elanları tapan funksiya"""
-    # Bina.az mülkiyyətçi (sahibkar) axtarış linki
-    url = "https://bina.az/baki/alqi-satqi/menziller?owner=true"
-    
-    # Saytın bizi bloklamaması üçün brauzer başlığı əlavə edirik
-    headers = {"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64)"}
-    
-    try:
-        response = requests.get(url, headers=headers)
-        if response.status_code != 200:
-            print("Sayta qoşulmaq olmadı:", response.status_code)
-            return
+    # Hər dəfə yoxlamadan sonra neçə saniyə gözləyəcəyini təyin edin (məsələn: 60 saniyə)
+    time.sleep(60)
 
-        soup = BeautifulSoup(response.text, 'html.parser')
-        
-        # Saytdakı elan bloklarını tapırıq
-        ads = soup.find_all('div', class_='property')
 
-        for ad in ads:
-            # Hər elanın unikal ID-sini götürürük
-            ad_id = ad.get('data-item-id')
-            
-            # Əgər bu elan hələ göndərilməyibsə
-            if ad_id and ad_id not in sent_ads:
-                # Elanın başlığı, qiyməti və linkini tapırıq
-                title_elem = ad.find('div', class_='property__title')
-                price_elem = ad.find('div', class_='property__price')
-                link_elem = ad.find('a')
-                
-                title = title_elem.text.strip() if title_elem else "Başlıq yoxdur"
-                price = price_elem.text.strip() if price_elem else "Qiymət yoxdur"
-                link = "https://bina.az" + link_elem['href'] if link_elem else ""
-                
-                # Telegram üçün mesaj hazırlayırıq
-                message = f"<b>🏠 Yeni Mülkiyyətçi Elanı!</b>\n\n{title}\n<b>💰 Qiymət:</b> {price}\n\n<a href='{link}'>🔗 Elana bax</a>"
-                
-                # Mesajı göndəririk
-                send_telegram_message(message)
-                
-                # Bu elanı artıq göndərilənlərə əlavə edirik ki, təkrar gəlməsin
-                sent_ads.add(ad_id)
-                
-    except Exception as e:
-        print(f"Xəta baş verdi: {e}")
+if _name_ == "_main_":
+  # 1. Botu arxa planda (Thread ilə) işə salırıq
+  bot_thread = Thread(target=check_bina)
+  bot_thread.daemon = True
+  bot_thread.start()
 
-# 4. Sonsuz dövr (Bot hər 5 dəqiqədən bir saytı yoxlayacaq)
-print("Bot işə düşdü və elanları izləyir...")
-while True:
-    check_bina_ads()
-    time.sleep(300) # 300 saniyə = 5 dəqiqə gözləmə
+  # 2. Flask serverini işə salırıq (Render-in tələb etdiyi PORT üzərindən)
+  port = int(os.environ.get("PORT", 5000))
+  app.run(host="0.0.0.0", port=port)
