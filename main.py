@@ -47,7 +47,7 @@ def check_bina():
     time.sleep(60)
 
 
-if _name_ == "_main_":
+if __name__ == "__main__":
   # 1. Botu arxa planda (Thread ilə) işə salırıq
   bot_thread = Thread(target=check_bina)
   bot_thread.daemon = True
