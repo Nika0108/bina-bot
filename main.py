@@ -6,7 +6,7 @@ from bs4 import BeautifulSoup
 from flask import Flask
 
 # --- Flask Server (Render portu tanıması və yatmaması üçün) ---
-app = Flask(_name_)
+app = Flask(__name__)
 
 
 @app.route("/")
