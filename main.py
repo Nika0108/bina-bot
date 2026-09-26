@@ -6,7 +6,7 @@ from bs4 import BeautifulSoup
 from flask import Flask
 
 # --- Flask Server (Render portu tanıması və yatmaması üçün) ---
-app = Flask(_name_)
+app = Flask(__name__)
 
 
 @app.route("/")
@@ -105,7 +105,7 @@ def check_bina():
     time.sleep(60)
 
 
-if _name_ == "_main_":
+if _name_ == "__main__":
   # 1. Botu arxa planda (Thread ilə) işə salırıq
   bot_thread = Thread(target=check_bina)
   bot_thread.daemon = True
